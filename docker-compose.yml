@@ -1,0 +1,28 @@
+services:
+  db:
+    build: ./db
+    environment:
+      POSTGRES_USER: persona
+      POSTGRES_PASSWORD: persona
+      POSTGRES_DB: persona
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "persona"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgres://persona:persona@db:5432/persona?sslmode=disable
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./web
+    ports:
+      - "${HOST_PORT}:80"
+    depends_on:
+      - api
