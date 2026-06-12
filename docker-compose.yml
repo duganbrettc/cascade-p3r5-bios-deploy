@@ -24,6 +24,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 10s
 
   web:
     build: ./web
@@ -37,3 +38,4 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 10s
