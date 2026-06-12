@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bios - Timeline</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Timeline</a>
+    <a href="/post">New Post</a>
+    <a href="/profile">Profile</a>
+    <a href="/users">Users</a>
+    <button type="button" class="nav-logout" id="logout-btn">Logout</button>
+  </nav>
+  <div class="container">
+    <h1>Timeline</h1>
+    <main id="posts-container">
+      <p>Loading...</p>
+    </main>
+  </div>
+  <script src="/avatar.js"></script>
+  <script>
+    var token = localStorage.getItem('token') || localStorage.getItem('session_token');
+    if (!token) { window.location.href = '/login'; }
+
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('session_token');
+      window.location.href = '/login';
+    });
+
+    function renderPost(post) {
+      var article = document.createElement('article');
+      article.className = 'card';
+
+      var header = document.createElement('div');
+      header.className = 'post-header';
+
+      var av = makeAvatar(post.username || '');
+      var userLink = document.createElement('a');
+      userLink.href = '/users/' + encodeURIComponent(post.username || '');
+      userLink.appendChild(av);
+      header.appendChild(userLink);
+
+      var meta = document.createElement('p');
+      meta.className = 'post-meta';
+      var uLink = document.createElement('a');
+      uLink.href = '/users/' + encodeURIComponent(post.username || '');
+      uLink.textContent = '@' + (post.username || '');
+      meta.appendChild(uLink);
+      var ts = document.createElement('span');
+      ts.textContent = post.created_at ? '  · ' + new Date(post.created_at).toLocaleDateString() : '';
+      meta.appendChild(ts);
+      header.appendChild(meta);
+      article.appendChild(header);
+
+      var bodyEl = document.createElement('p');
+      bodyEl.className = 'post-body';
+      bodyEl.textContent = post.body;
+      article.appendChild(bodyEl);
+
+      return article;
+    }
+
+    fetch('/api/timeline', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(function(r) {
+      if (r.status === 401) { window.location.href = '/login'; return null; }
+      return r.json();
+    })
+    .then(function(posts) {
+      if (!posts) return;
+      var container = document.getElementById('posts-container');
+      container.innerHTML = '';
+      if (!posts || posts.length === 0) {
+        container.innerHTML = '<p>No posts yet. <a href="/users">Follow some users</a> or <a href="/post">create a post</a>!</p>';
+        return;
+      }
+      posts.forEach(function(post) {
+        container.appendChild(renderPost(post));
+      });
+    })
+    .catch(function() {
+      document.getElementById('posts-container').innerHTML = '<p class="error">Failed to load timeline.</p>';
+    });
+  </script>
+</body>
+</html>

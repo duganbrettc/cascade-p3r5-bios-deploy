@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bios - Sign Up</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="auth-card">
+    <h1>Sign Up</h1>
+    <form id="signup-form">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="Choose a username" required autocomplete="username">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Choose a password" required autocomplete="new-password">
+      <button type="submit">Create Account</button>
+      <p class="error" id="err-msg" style="display:none"></p>
+    </form>
+    <p class="auth-footer">Already have an account? <a href="/login">Log in</a></p>
+  </div>
+  <script>
+    document.getElementById('signup-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var username = document.getElementById('username').value.trim();
+      var password = document.getElementById('password').value;
+      var errEl = document.getElementById('err-msg');
+      errEl.style.display = 'none';
+
+      fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+      })
+      .then(function(r) {
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Signup failed'); });
+        return r.json();
+      })
+      .then(function(data) {
+        localStorage.setItem('token', data.session_token);
+        window.location.href = '/';
+      })
+      .catch(function(err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+      });
+    });
+  </script>
+</body>
+</html>

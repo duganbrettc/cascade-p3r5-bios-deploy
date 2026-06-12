@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bios - User Profile</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Timeline</a>
+    <a href="/post">New Post</a>
+    <a href="/profile">Profile</a>
+    <a href="/users">Users</a>
+    <button type="button" class="nav-logout" id="logout-btn">Logout</button>
+  </nav>
+  <div class="container">
+    <section id="profile-section">
+      <p>Loading...</p>
+    </section>
+    <h2 id="posts-heading" style="display:none;margin-top:24px">Posts</h2>
+    <main id="posts-container"></main>
+  </div>
+  <script src="/avatar.js"></script>
+  <script>
+    var token = localStorage.getItem('token') || localStorage.getItem('session_token');
+    if (!token) { window.location.href = '/login'; }
+
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('session_token');
+      window.location.href = '/login';
+    });
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    var pathParts = window.location.pathname.split('/').filter(Boolean);
+    var username = decodeURIComponent(pathParts[pathParts.length - 1] || '');
+
+    if (!username) {
+      document.getElementById('profile-section').innerHTML = '<p class="error">No username in URL.</p>';
+    } else {
+      document.title = 'Bios - @' + username;
+
+      fetch('/api/users/' + encodeURIComponent(username), {
+        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token')) }
+      })
+      .then(function(r) {
+        if (r.status === 401) { window.location.href = '/login'; return null; }
+        if (r.status === 404) throw new Error('User not found');
+        if (!r.ok) throw new Error('Failed to load profile');
+        return r.json();
+      })
+      .then(function(user) {
+        if (!user) return;
+        var section = document.getElementById('profile-section');
+        section.innerHTML = '';
+
+        var card = document.createElement('div');
+        card.className = 'card';
+
+        /* Avatar + name header */
+        var header = document.createElement('div');
+        header.className = 'profile-header';
+        var av = makeAvatar(user.username, true);
+        av.className += ' avatar-lg';
+        header.appendChild(av);
+
+        var nameBlock = document.createElement('div');
+        var h2 = document.createElement('h2');
+        h2.textContent = user.display_name || ('@' + user.username);
+        nameBlock.appendChild(h2);
+        var handle = document.createElement('p');
+        handle.className = 'post-meta';
+        handle.textContent = '@' + user.username;
+        nameBlock.appendChild(handle);
+        header.appendChild(nameBlock);
+        card.appendChild(header);
+
+        /* Stats row: follower_count, following_count */
+        var stats = document.createElement('div');
+        stats.style.marginBottom = '12px';
+        var followerEl = document.createElement('span');
+        followerEl.className = 'profile-stat';
+        followerEl.innerHTML = '<strong id="follower-count">' + (user.follower_count !== undefined ? user.follower_count : 0) + '</strong> Followers';
+        stats.appendChild(followerEl);
+        var followingEl = document.createElement('span');
+        followingEl.className = 'profile-stat';
+        followingEl.innerHTML = '<strong>' + (user.following_count !== undefined ? user.following_count : 0) + '</strong> Following';
+        stats.appendChild(followingEl);
+        card.appendChild(stats);
+
+        /* Joined date line */
+        if (user.created_at) {
+          var joined = document.createElement('p');
+          joined.className = 'joined-line';
+          joined.textContent = 'Joined ' + new Date(user.created_at).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+          card.appendChild(joined);
+        }
+
+        /* Profile fields: bio, location, website */
+        if (user.bio) {
+          var bioEl = document.createElement('p');
+          bioEl.className = 'profile-field';
+          bioEl.innerHTML = '<strong>Bio:</strong> ' + escHtml(user.bio);
+          card.appendChild(bioEl);
+        }
+        if (user.location) {
+          var locEl = document.createElement('p');
+          locEl.className = 'profile-field';
+          locEl.innerHTML = '<strong>Location:</strong> ' + escHtml(user.location);
+          card.appendChild(locEl);
+        }
+        if (user.website) {
+          var webEl = document.createElement('p');
+          webEl.className = 'profile-field';
+          webEl.innerHTML = '<strong>Website:</strong> <a href="' + escHtml(user.website) + '" target="_blank" rel="noopener">' + escHtml(user.website) + '</a>';
+          card.appendChild(webEl);
+        }
+
+        /* Follow/Unfollow button */
+        var followBtn = document.createElement('button');
+        followBtn.type = 'button';
+        followBtn.className = 'follow-btn' + (user.is_following ? ' following' : '');
+        followBtn.textContent = user.is_following ? 'Unfollow' : 'Follow';
+        followBtn.style.marginTop = '16px';
+        followBtn.dataset.following = user.is_following ? '1' : '0';
+
+        followBtn.addEventListener('click', function() {
+          var isNowFollowing = followBtn.dataset.following === '1';
+          var method = isNowFollowing ? 'DELETE' : 'POST';
+          fetch('/api/follow/' + encodeURIComponent(user.username), {
+            method: method,
+            headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token')) }
+          })
+          .then(function(r) {
+            if (!r.ok && r.status !== 204) throw new Error('Action failed');
+            if (isNowFollowing) {
+              followBtn.dataset.following = '0';
+              followBtn.textContent = 'Follow';
+              followBtn.classList.remove('following');
+              var fc = document.getElementById('follower-count');
+              if (fc) fc.textContent = Math.max(0, parseInt(fc.textContent, 10) - 1);
+            } else {
+              followBtn.dataset.following = '1';
+              followBtn.textContent = 'Unfollow';
+              followBtn.classList.add('following');
+              var fc = document.getElementById('follower-count');
+              if (fc) fc.textContent = parseInt(fc.textContent, 10) + 1;
+            }
+          })
+          .catch(function(err) { alert('Error: ' + err.message); });
+        });
+        card.appendChild(followBtn);
+
+        section.appendChild(card);
+      })
+      .catch(function(err) {
+        document.getElementById('profile-section').innerHTML = '<p class="error">' + escHtml(err.message) + '</p>';
+      });
+
+      /* Load user's posts */
+      fetch('/api/posts/by/' + encodeURIComponent(username), {
+        headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token')) }
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Failed to load posts');
+        return r.json();
+      })
+      .then(function(posts) {
+        var container = document.getElementById('posts-container');
+        var heading = document.getElementById('posts-heading');
+        container.innerHTML = '';
+        if (!posts || posts.length === 0) {
+          heading.style.display = '';
+          container.innerHTML = '<p class="card">No posts yet.</p>';
+          return;
+        }
+        heading.style.display = '';
+        posts.forEach(function(post) {
+          var article = document.createElement('article');
+          article.className = 'card';
+
+          var header = document.createElement('div');
+          header.className = 'post-header';
+          var av = makeAvatar(post.username || username);
+          header.appendChild(av);
+          var meta = document.createElement('p');
+          meta.className = 'post-meta';
+          meta.textContent = '@' + (post.username || username) + (post.created_at ? '  · ' + new Date(post.created_at).toLocaleDateString() : '');
+          header.appendChild(meta);
+          article.appendChild(header);
+
+          var bodyEl = document.createElement('p');
+          bodyEl.className = 'post-body';
+          bodyEl.textContent = post.body;
+          article.appendChild(bodyEl);
+
+          container.appendChild(article);
+        });
+      })
+      .catch(function() {
+        document.getElementById('posts-container').innerHTML = '<p class="error">Failed to load posts.</p>';
+      });
+    }
+  </script>
+</body>
+</html>

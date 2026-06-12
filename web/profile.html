@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bios - My Profile</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Timeline</a>
+    <a href="/post">New Post</a>
+    <a href="/profile">Profile</a>
+    <a href="/users">Users</a>
+    <button type="button" class="nav-logout" id="logout-btn">Logout</button>
+  </nav>
+  <div class="container">
+    <h1>My Profile</h1>
+    <section class="card" id="profile-section">
+      <p>Loading...</p>
+    </section>
+  </div>
+  <script src="/avatar.js"></script>
+  <script>
+    var token = localStorage.getItem('token') || localStorage.getItem('session_token');
+    if (!token) { window.location.href = '/login'; }
+
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('session_token');
+      window.location.href = '/login';
+    });
+
+    var profileSection = document.getElementById('profile-section');
+
+    fetch('/api/users/me', {
+      headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token')) }
+    })
+    .then(function(r) {
+      if (r.status === 401) { window.location.href = '/login'; return null; }
+      if (!r.ok) throw new Error('Failed to load profile');
+      return r.json();
+    })
+    .then(function(user) {
+      if (!user) return;
+      profileSection.innerHTML = '';
+
+      var header = document.createElement('div');
+      header.className = 'profile-header';
+      var av = makeAvatar(user.username, true);
+      header.appendChild(av);
+      var nameEl = document.createElement('div');
+      nameEl.innerHTML = '<strong style="font-size:1.2rem">@' + escHtml(user.username) + '</strong>';
+      header.appendChild(nameEl);
+      profileSection.appendChild(header);
+
+      var formEl = document.createElement('form');
+      formEl.id = 'profile-form';
+
+      var fields = [
+        { name: 'display_name', label: 'Display Name', value: user.display_name || '', placeholder: 'Your display name' },
+        { name: 'bio', label: 'Bio (max 160 chars)', value: user.bio || '', placeholder: 'A short bio about yourself', maxlen: 160 },
+        { name: 'location', label: 'Location', value: user.location || '', placeholder: 'Where are you?' },
+        { name: 'website', label: 'Website', value: user.website || '', placeholder: 'https://...' }
+      ];
+
+      fields.forEach(function(f) {
+        var label = document.createElement('label');
+        label.setAttribute('for', 'field-' + f.name);
+        label.textContent = f.label;
+        formEl.appendChild(label);
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'field-' + f.name;
+        input.name = f.name;
+        input.value = f.value;
+        input.placeholder = f.placeholder;
+        if (f.maxlen) input.maxLength = f.maxlen + 20;
+        formEl.appendChild(input);
+      });
+
+      var bioCounter = document.createElement('p');
+      bioCounter.className = 'char-counter';
+      var bioInput = formEl.querySelector('[name="bio"]');
+      bioCounter.textContent = (bioInput.value.length) + ' / 160';
+      formEl.appendChild(bioCounter);
+
+      bioInput.addEventListener('input', function() {
+        var len = bioInput.value.length;
+        bioCounter.textContent = len + ' / 160';
+        if (len > 160) {
+          bioCounter.classList.add('over-limit');
+        } else {
+          bioCounter.classList.remove('over-limit');
+        }
+      });
+
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'submit';
+      saveBtn.textContent = 'Save Changes';
+      formEl.appendChild(saveBtn);
+
+      var errEl = document.createElement('p');
+      errEl.className = 'error';
+      errEl.style.display = 'none';
+      formEl.appendChild(errEl);
+
+      var okEl = document.createElement('p');
+      okEl.className = 'success';
+      okEl.style.display = 'none';
+      formEl.appendChild(okEl);
+
+      profileSection.appendChild(formEl);
+
+      formEl.addEventListener('submit', function(e) {
+        e.preventDefault();
+        errEl.style.display = 'none';
+        okEl.style.display = 'none';
+
+        var payload = {
+          display_name: formEl.querySelector('[name="display_name"]').value,
+          bio: formEl.querySelector('[name="bio"]').value,
+          location: formEl.querySelector('[name="location"]').value,
+          website: formEl.querySelector('[name="website"]').value
+        };
+
+        fetch('/api/users/me', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token'))
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(function(r) {
+          if (r.status === 422) return r.json().then(function(d) { throw new Error(d.error || 'Validation error (bio > 160 chars?)'); });
+          if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Save failed'); });
+          return r.json();
+        })
+        .then(function() {
+          okEl.textContent = 'Profile saved!';
+          okEl.style.display = 'block';
+        })
+        .catch(function(err) {
+          errEl.textContent = err.message;
+          errEl.style.display = 'block';
+        });
+      });
+    })
+    .catch(function() {
+      profileSection.innerHTML = '<p class="error">Failed to load profile.</p>';
+    });
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bios - New Post</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Timeline</a>
+    <a href="/post">New Post</a>
+    <a href="/profile">Profile</a>
+    <a href="/users">Users</a>
+    <button type="button" class="nav-logout" id="logout-btn">Logout</button>
+  </nav>
+  <div class="container">
+    <h1>New Post</h1>
+    <section class="card">
+      <form id="post-form">
+        <label for="post-body">What's on your mind?</label>
+        <textarea id="post-body" name="body" rows="5" placeholder="Share something... (max 280 characters)" required maxlength="500"></textarea>
+        <p class="char-counter" id="char-counter">0 / 280</p>
+        <button type="submit" id="post-submit-btn">Post</button>
+        <p class="error" id="err-msg" style="display:none"></p>
+        <p class="success" id="ok-msg" style="display:none"></p>
+      </form>
+    </section>
+  </div>
+  <script>
+    var token = localStorage.getItem('token') || localStorage.getItem('session_token');
+    if (!token) { window.location.href = '/login'; }
+
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('session_token');
+      window.location.href = '/login';
+    });
+
+    var bodyInput = document.getElementById('post-body');
+    var counter = document.getElementById('char-counter');
+    var submitBtn = document.getElementById('post-submit-btn');
+    var MAX = 280;
+
+    bodyInput.addEventListener('input', function() {
+      var len = bodyInput.value.length;
+      counter.textContent = len + ' / ' + MAX;
+      if (len > MAX) {
+        counter.classList.add('over-limit');
+        submitBtn.disabled = true;
+      } else {
+        counter.classList.remove('over-limit');
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('post-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var body = bodyInput.value.trim();
+      var errEl = document.getElementById('err-msg');
+      var okEl = document.getElementById('ok-msg');
+      errEl.style.display = 'none';
+      okEl.style.display = 'none';
+
+      if (body.length > MAX) return;
+
+      fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token'))
+        },
+        body: JSON.stringify({ body: body })
+      })
+      .then(function(r) {
+        if (r.status === 422) return r.json().then(function(d) { throw new Error(d.error || 'Post too long'); });
+        if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Post failed'); });
+        return r.json();
+      })
+      .then(function() {
+        bodyInput.value = '';
+        counter.textContent = '0 / ' + MAX;
+        counter.classList.remove('over-limit');
+        submitBtn.disabled = false;
+        okEl.textContent = 'Posted!';
+        okEl.style.display = 'block';
+        setTimeout(function() { window.location.href = '/'; }, 800);
+      })
+      .catch(function(err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bios - Browse Users</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <nav>
+    <a href="/">Timeline</a>
+    <a href="/post">New Post</a>
+    <a href="/profile">Profile</a>
+    <a href="/users">Users</a>
+    <button type="button" class="nav-logout" id="logout-btn">Logout</button>
+  </nav>
+  <div class="container">
+    <h1>Browse Users</h1>
+    <main id="users-list">
+      <p>Loading...</p>
+    </main>
+  </div>
+  <script src="/avatar.js"></script>
+  <script>
+    var token = localStorage.getItem('token') || localStorage.getItem('session_token');
+    if (!token) { window.location.href = '/login'; }
+
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('session_token');
+      window.location.href = '/login';
+    });
+
+    function renderUserCard(user) {
+      var div = document.createElement('div');
+      div.className = 'user-card';
+
+      var av = makeAvatar(user.username);
+      var profileLink = document.createElement('a');
+      profileLink.href = '/users/' + encodeURIComponent(user.username);
+      profileLink.appendChild(av);
+      div.appendChild(profileLink);
+
+      var info = document.createElement('div');
+      info.className = 'user-info';
+
+      var uLink = document.createElement('a');
+      uLink.href = '/users/' + encodeURIComponent(user.username);
+      uLink.className = 'username';
+      uLink.textContent = '@' + user.username;
+      info.appendChild(uLink);
+
+      if (user.display_name) {
+        var dn = document.createElement('p');
+        dn.className = 'display-name';
+        dn.textContent = user.display_name;
+        info.appendChild(dn);
+      }
+
+      div.appendChild(info);
+
+      var followBtn = document.createElement('button');
+      followBtn.type = 'button';
+      followBtn.className = 'follow-btn' + (user.is_following ? ' following' : '');
+      followBtn.textContent = user.is_following ? 'Unfollow' : 'Follow';
+      followBtn.dataset.username = user.username;
+      followBtn.dataset.following = user.is_following ? '1' : '0';
+
+      followBtn.addEventListener('click', function() {
+        var uname = followBtn.dataset.username;
+        var isNowFollowing = followBtn.dataset.following === '1';
+        var method = isNowFollowing ? 'DELETE' : 'POST';
+        var url = '/api/follow/' + encodeURIComponent(uname);
+
+        fetch(url, {
+          method: method,
+          headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token')) }
+        })
+        .then(function(r) {
+          if (!r.ok && r.status !== 204) throw new Error('Action failed');
+          if (isNowFollowing) {
+            followBtn.dataset.following = '0';
+            followBtn.textContent = 'Follow';
+            followBtn.classList.remove('following');
+          } else {
+            followBtn.dataset.following = '1';
+            followBtn.textContent = 'Unfollow';
+            followBtn.classList.add('following');
+          }
+        })
+        .catch(function(err) {
+          alert('Error: ' + err.message);
+        });
+      });
+
+      div.appendChild(followBtn);
+      return div;
+    }
+
+    fetch('/api/users', {
+      headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('token') || localStorage.getItem('session_token')) }
+    })
+    .then(function(r) {
+      if (r.status === 401) { window.location.href = '/login'; return null; }
+      if (!r.ok) throw new Error('Failed to load users');
+      return r.json();
+    })
+    .then(function(users) {
+      if (!users) return;
+      var list = document.getElementById('users-list');
+      list.innerHTML = '';
+      if (!users || users.length === 0) {
+        list.innerHTML = '<p>No users found.</p>';
+        return;
+      }
+      users.forEach(function(u) {
+        list.appendChild(renderUserCard(u));
+      });
+    })
+    .catch(function() {
+      document.getElementById('users-list').innerHTML = '<p class="error">Failed to load users.</p>';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,308 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  background-color: #f0f2f5;
+  color: #333;
+  line-height: 1.5;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #1a1a2e;
+}
+
+h2 {
+  font-size: 1.4rem;
+  margin-bottom: 0.75rem;
+}
+
+nav {
+  background-color: #1a1a2e;
+  padding: 12px 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+nav a {
+  color: #e0e0e0;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+nav a:hover {
+  color: #fff;
+}
+
+.nav-logout {
+  margin-left: auto;
+  background-color: #e24a4a;
+  padding: 6px 14px;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.nav-logout:hover {
+  background-color: #bd3535;
+}
+
+.container {
+  max-width: 800px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+label {
+  font-weight: 500;
+  font-size: 14px;
+  color: #555;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="url"],
+textarea {
+  padding: 10px 14px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  width: 100%;
+  font-family: inherit;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74,144,226,0.15);
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #4a90e2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+button:hover {
+  background-color: #357abd;
+}
+
+button.danger {
+  background-color: #e24a4a;
+}
+
+button.danger:hover {
+  background-color: #bd3535;
+}
+
+button.secondary {
+  background-color: #6c757d;
+}
+
+button.secondary:hover {
+  background-color: #545b62;
+}
+
+button.follow-btn {
+  padding: 6px 16px;
+  font-size: 14px;
+  background-color: #4a90e2;
+}
+
+button.follow-btn.following {
+  background-color: #6c757d;
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.post-meta {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.post-body {
+  margin: 4px 0 8px 0;
+  white-space: pre-wrap;
+}
+
+/* Avatar */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  font-size: 15px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.avatar-lg {
+  width: 72px;
+  height: 72px;
+  font-size: 26px;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.user-card .user-info {
+  flex: 1;
+}
+
+.user-card .username {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.user-card .display-name {
+  font-size: 13px;
+  color: #666;
+}
+
+/* Character counter */
+.char-counter {
+  font-size: 13px;
+  color: #666;
+  text-align: right;
+}
+
+.char-counter.over-limit {
+  color: #e24a4a;
+  font-weight: bold;
+}
+
+/* Profile fields */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.profile-stat {
+  font-size: 14px;
+  color: #555;
+  margin-right: 16px;
+}
+
+.profile-stat strong {
+  font-size: 16px;
+  color: #1a1a2e;
+}
+
+.profile-field {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.profile-field strong {
+  color: #333;
+}
+
+.joined-line {
+  font-size: 13px;
+  color: #888;
+  margin-top: 8px;
+}
+
+.error {
+  color: #e24a4a;
+  margin-top: 8px;
+}
+
+.success {
+  color: #27ae60;
+  margin-top: 8px;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  color: #4a90e2;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 16px;
+  color: #666;
+}
+
+.auth-card {
+  max-width: 400px;
+  margin: 60px auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.auth-card h1 {
+  text-align: center;
+  margin-bottom: 24px;
+}
